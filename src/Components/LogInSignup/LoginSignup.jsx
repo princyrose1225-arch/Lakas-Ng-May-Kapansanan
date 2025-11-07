@@ -1,10 +1,11 @@
 import React, { act, useEffect, useState } from 'react'
 import './LoginSignup.css'
+import { DashBoard } from '../Dashboard/DashBoard';
 import Image from '../Assets/logo.png';
 
 
 export const LoginSignup = () => {
-  
+
   useEffect(()=>{
     document.title = ("Log In")
   },[]);
@@ -60,12 +61,14 @@ export const LoginSignup = () => {
 
           <div className="submit-container">
             <div className={action==="LOG IN"?"submit gray":"submit"} onClick={()=>{setAction("SIGN UP")}}>Sign Up</div>
-            <div className={action==="SIGN UP"?"submit gray":"submit"} onClick={()=>{setAction("LOG IN")}}>Log In</div>
+              
+            <div className={action==="SIGN UP"?"submit gray":"submit"} onClick={()=>{setAction("LOG IN"); }}>Log In</div>
           </div>
 
             <div className="forgotPw">
             <button type="button" class="forgotPw-btn">Forgot Password?</button>
           </div>
+
         </div>
       </div>
       </>
