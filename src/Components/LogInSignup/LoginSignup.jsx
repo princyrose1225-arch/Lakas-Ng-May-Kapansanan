@@ -1,7 +1,6 @@
-import React, { act, useEffect, useState} from 'react'
+import { useEffect, useState} from 'react'
 import { useNavigate } from "react-router-dom";
 import './LoginSignup.css'
-import { DashBoard } from '../Dashboard/DashBoard';
 import Image from '../Assets/logo.png';
 
 export const LoginSignup = () => {
