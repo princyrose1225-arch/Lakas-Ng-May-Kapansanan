@@ -1,92 +1,87 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Fix Leaflet default icon paths
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+// Component to fly map to user's location
+function FlyToLocation({ position }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) map.flyTo(position, 17);
+  }, [position, map]);
+  return null;
+}
 
 function DashBoard() {
-  const mapRef = useRef(null);
+  const [position, setPosition] = useState(null);
+  const [accuracy, setAccuracy] = useState(0);
 
   useEffect(() => {
-    if (!mapRef.current) return;
-
-    // ---------------------
-    // Fix Leaflet icon paths
-    // ---------------------
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-        iconUrl: "/leaflet/marker-icon.png",
-        shadowUrl: "/leaflet/marker-shadow.png",
-    });
-
-    // ---------------------
-    // Initialize map
-    // ---------------------
-    const map = L.map(mapRef.current).setView([0, 0], 2); // world view initially
-
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    // ---------------------
-    // User location marker
-    // ---------------------
-    let marker = null;
-    let circle = null;
-    let zoomed = false;
-
-    function success(pos) {
-      const { latitude, longitude, accuracy } = pos.coords;
-
-      if (marker) {
-        map.removeLayer(marker);
-        map.removeLayer(circle);
-      }
-
-      marker = L.marker([latitude, longitude]).addTo(map);
-      circle = L.circle([latitude, longitude], { radius: accuracy }).addTo(map);
-
-      if (!zoomed) {
-        zoomed = true;
-        map.flyTo([latitude, longitude], 17); // zoom to user location
-      }
+    if (!("geolocation" in navigator)) {
+      alert("Geolocation is not supported by your browser");
+      return;
     }
 
-    function error(err) {
-      console.log("Geolocation error:", err);
-      alert(
-        err.code === 1
-          ? "Please allow location access"
-          : "Unable to get your location"
-      );
-    }
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(success, error, {
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setPosition([pos.coords.latitude, pos.coords.longitude]);
+        setAccuracy(pos.coords.accuracy);
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        alert(
+          err.code === 1
+            ? "Please allow location access"
+            : "Unable to get your location"
+        );
+      },
+      {
         enableHighAccuracy: true,
         maximumAge: 0,
         timeout: 5000,
-      });
-    } else {
-      alert("Geolocation is not supported by your browser");
-    }
+      }
+    );
 
-    // Cleanup map on unmount
-    return () => map.remove();
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>Map User Location</h1>
-      <div
-        ref={mapRef}
+      <MapContainer
+        center={[0, 0]}
+        zoom={2}
         style={{
-          height: "400px",
-          width: "800px",
+          height: "50vh",
+          width: "100vw",
+          maxWidth: "800px",
           borderRadius: "10px",
           overflow: "hidden",
         }}
-      ></div>
+      >
+        <TileLayer
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
+        {position && (
+          <>
+            <Marker position={position} />
+            <Circle center={position} radius={accuracy} />
+            <FlyToLocation position={position} />
+          </>
+        )}
+      </MapContainer>
     </div>
   );
 }
