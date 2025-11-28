@@ -90,15 +90,23 @@ function DashBoard() {
           <button
   className="alert-btn"
   onClick={() => {
+    // Check vibration support first (Android)
     if (navigator.vibrate) {
-      // Vibrate for supported devices (mostly Android)
       navigator.vibrate([500, 200, 500]);
-    } else if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-      // iOS fallback: play a sound
-      const audio = new Audio("/alert-sound.mp3"); // put a small beep sound in your public folder
-      audio.play().catch((err) => console.error("Audio play failed:", err));
     } else {
-      alert("Vibration or sound not supported on this device");
+      // iOS fallback: Play alert sound
+      const audio = new Audio("/alert.mp3");
+      audio.volume = 1.0;
+
+      audio
+        .play()
+        .then(() => {
+          console.log("Audio played on iOS");
+        })
+        .catch((err) => {
+          console.error("Audio failed to play:", err);
+          alert("⚠️ Sound could not be played on this device.");
+        });
     }
   }}
 >
