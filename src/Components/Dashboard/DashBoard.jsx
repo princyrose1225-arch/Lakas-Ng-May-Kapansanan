@@ -59,7 +59,6 @@ function DashBoard() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-
   return (
     <>
       <div className="map-title">
@@ -84,24 +83,28 @@ function DashBoard() {
         </MapContainer>
 
         <div className="map-info-box">
-  <p><strong>User:</strong> Princes Gomez</p>
-  <p><strong>Device ID:</strong> T02</p>
-  <p><strong>Status:</strong> Active</p>
-  <p><strong>Battery:</strong> 98%</p>
-  <button
-    className="alert-btn"
-    onClick={() => {
-      if ("vibrate" in navigator) {
-        navigator.vibrate([500, 200, 500]);
-      } else {
-        alert("Vibration not supported on this device.");
-      }
-    }}
-  >
-    ALERT
-  </button>
-</div>
-
+          <p><strong>User:</strong> Princes Gomez</p>
+          <p><strong>Device ID:</strong> T02</p>
+          <p><strong>Status:</strong> Active</p>
+          <p><strong>Battery:</strong> 98%</p>
+          <button
+  className="alert-btn"
+  onClick={() => {
+    if (navigator.vibrate) {
+      // Vibrate for supported devices (mostly Android)
+      navigator.vibrate([500, 200, 500]);
+    } else if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+      // iOS fallback: play a sound
+      const audio = new Audio("/alert-sound.mp3"); // put a small beep sound in your public folder
+      audio.play().catch((err) => console.error("Audio play failed:", err));
+    } else {
+      alert("Vibration or sound not supported on this device");
+    }
+  }}
+>
+  ALERT
+</button>
+        </div>
       </div>
     </>
   );
