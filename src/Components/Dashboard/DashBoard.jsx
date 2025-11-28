@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Circle, useMap } from "react-leaflet";
+import { useEffect, useState, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import "./DashBoard.css"; // Import the CSS file
+import "./DashBoard.css";
 
 // Fix Leaflet default icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -15,17 +15,23 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-// Component to fly map to user's location
-function FlyToLocation({ position }) {
-  const map = useMap();
-  useEffect(() => {
-    if (position) map.flyTo(position, 17);
-  }, [position, map]);
-  return null;
-}
-
 function DashBoard() {
-  const [position, setPosition] = useState(null);
+  const [position, setPosition] = useState(null); // [lat, lng]
+  const [initialCenter] = useState([14.7699169, 121.0784688]);
+  const mapRef = useRef(null);
+  const watchIdRef = useRef(null);
+
+  // Helper: set view on map when we have both map + position
+  useEffect(() => {
+    if (!mapRef.current || !position) return;
+    try {
+      // ensure map layout is correct then set view
+      mapRef.current.invalidateSize();
+      mapRef.current.setView(position, 17, { animate: true });
+    } catch (err) {
+      console.error("Error setting map view:", err);
+    }
+  }, [position]);
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
@@ -33,68 +39,101 @@ function DashBoard() {
       return;
     }
 
-   // 🔹 Get current position immediately after user allows location
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      setPosition([pos.coords.latitude, pos.coords.longitude]);
-    },
-    (err) => {
-      console.error("Geolocation error:", err);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 5000
-    }
-  );
+    const handleSuccess = (pos) => {
+      const coords = [pos.coords.latitude, pos.coords.longitude];
+      setPosition(coords);
+    };
 
-  // 🔹 Then watch for continuous location updates
-  const watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      setPosition([pos.coords.latitude, pos.coords.longitude]);
-    },
-    (err) => {
-      console.error("Geolocation error:", err);
-      alert(
-        err.code === 1
-          ? "Please allow location access"
-          : "Unable to get your location"
-      );
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000,
-    }
-  );
+    const handleError = (err) => {
+      console.warn("Geolocation error:", err);
+      if (err.code === 1) {
+        // Permission denied
+        alert("Please allow location access for this feature to work.");
+      }
+    };
 
-  return () => navigator.geolocation.clearWatch(watchId);
-}, []);
+    // 1) Try getCurrentPosition immediately (useful right after user clicks Allow)
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+      enableHighAccuracy: true,
+      timeout: 7000,
+    });
+
+    // 2) Start watchPosition for continuous updates
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      handleSuccess,
+      handleError,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 7000,
+      }
+    );
+
+    // 3) If Permissions API exists, listen for changes (user may toggle permission)
+    let permissionAbort = null;
+    if (navigator.permissions && navigator.permissions.query) {
+      let mounted = true;
+      navigator.permissions.query({ name: "geolocation" }).then((status) => {
+        if (!mounted) return;
+        // if state becomes 'granted', request a fresh position
+        const onChange = () => {
+          if (status.state === "granted") {
+            // force a fresh read
+            navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+              enableHighAccuracy: true,
+              timeout: 7000,
+            });
+          }
+        };
+        status.addEventListener?.("change", onChange);
+        // cleanup closure
+        permissionAbort = () => status.removeEventListener?.("change", onChange);
+      }).catch(() => {
+        permissionAbort = null;
+      });
+
+      return () => {
+        mounted = false;
+        if (permissionAbort) permissionAbort();
+        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      };
+    }
+
+    // cleanup if Permissions API not used
+    return () => {
+      if (permissionAbort) permissionAbort();
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
+  }, []);
 
   return (
-    // Main container for the dashboard
-<>
-  <div className="map-title">
-    <h1>Map User Location</h1>
-  </div>
+    <>
+      <div className="map-title">
+        <h1>Map User Location</h1>
+      </div>
 
-  <div className="dashboard-container">
-    <MapContainer
-      center={[14.7699169, 121.0784688]}
-      zoom={16}
-      className="map-container"
-    >
-      <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <div className="dashboard-container">
+        <MapContainer
+          center={initialCenter}
+          zoom={16}
+          className="map-container"
+          whenCreated={(mapInstance) => {
+            mapRef.current = mapInstance;
+            // Invalidate size to prevent tile cut-off when map is inside flex/hidden containers
+            setTimeout(() => mapInstance.invalidateSize(), 300);
+          }}
+        >
+          <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {position && (
-        <>
-          <Marker position={position} />
-          <Circle center={position} radius={450} />
-          <FlyToLocation position={position} />
-        </>
-      )}
-    </MapContainer>
-  </div>
-</>
+          {position && (
+            <>
+              <Marker position={position} />
+              <Circle center={position} radius={450} />
+            </>
+          )}
+        </MapContainer>
+      </div>
+    </>
   );
 }
 
