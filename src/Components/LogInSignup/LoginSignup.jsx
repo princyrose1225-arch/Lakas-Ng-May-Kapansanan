@@ -8,16 +8,24 @@ export const LoginSignup = () => {
   const [pageTitle, setPageTitle] = useState("Log In");
   const [action, setAction] = useState("LOG IN");
 
+  /* form  */
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstname, setFirstname] = useState("");
+  const [middlename, setMiddlename] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [email, setEmail] = useState("");
+  const [contact, setContact] = useState("");
+
   useEffect(() => {
     document.title = pageTitle;
   }, [pageTitle]);
 
   // MUST BE ON TOP //
-  const [username, setUsername] = useState("");
-  const [pw, setPassword] = useState("");
+ 
 
   const navigate = useNavigate();
-
+  
   const handleLogIn = async (e) => {
   e.preventDefault();
 
@@ -27,7 +35,7 @@ export const LoginSignup = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: username,
-        password: pw
+        password: password
       }),
     });
 
@@ -45,6 +53,39 @@ export const LoginSignup = () => {
     alert("Server error. Please try again.");
     }
   };
+
+ const handleSignUp = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("http://localhost:8080/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        password: password,
+        firstname,
+        middlename,
+        lastname,
+        email,
+        contact,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Account created successfully! You can now log in.");
+      setAction("LOG IN");
+      setPageTitle("Log In");
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    console.error("Signup failed:", err);
+    alert("Server error. Please try again.");
+  }
+};
 
 
   return (
@@ -75,7 +116,7 @@ export const LoginSignup = () => {
               <input 
                 type="password" 
                 placeholder='Password'
-                value={pw}
+                value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
@@ -83,14 +124,73 @@ export const LoginSignup = () => {
 
           {/* SIGN UP FIELDS */}
           {action === "LOG IN" ? null :
-            <>
-              <div className="input"><input type="text" placeholder='First Name' /></div>
-              <div className="input"><input type="text" placeholder='Middle Name' /></div>
-              <div className="input"><input type="text" placeholder='Last Name' /></div>
-              <div className="input"><input type="email" placeholder='Email Address' /></div>
-              <div className="input"><input type="text" placeholder='Contact Number' maxLength={11} /></div>
-            </>
-          }
+  <>
+    <div className="input">
+      <input 
+        type="text" 
+        placeholder='Username'
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+    </div>
+
+    <div className="input">
+      <input 
+        type="password" 
+        placeholder='Password'
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+    </div>
+
+    <div className="input">
+      <input 
+        type="text" 
+        placeholder='First Name'
+        value={firstname}
+        onChange={(e) => setFirstname(e.target.value)}
+      />
+    </div>
+
+    <div className="input">
+      <input 
+        type="text" 
+        placeholder='Middle Name'
+        value={middlename}
+        onChange={(e) => setMiddlename(e.target.value)}
+      />
+    </div>
+
+    <div className="input">
+      <input 
+        type="text" 
+        placeholder='Last Name'
+        value={lastname}
+        onChange={(e) => setLastname(e.target.value)}
+      />
+    </div>
+
+    <div className="input">
+      <input 
+        type="email" 
+        placeholder='Email Address'
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+    </div>
+
+    <div className="input">
+      <input 
+        type="text" 
+        placeholder='Contact Number'
+        maxLength={11}
+        value={contact}
+        onChange={(e) => setContact(e.target.value)}
+        
+      />
+    </div>
+  </>
+}
 
           {/* BUTTONS */}
           {action === "SIGN UP" ? null : (
@@ -113,38 +213,33 @@ export const LoginSignup = () => {
         )}
 
 
-          {/* SIGN UP ONLY BUTTON */}
-          {action === "LOG IN" ? null :
+          {/* SIGN UP BUTTON ON SIGN UP PAGE*/}
+          {action === "SIGN UP" && (
             <div className="submitcontainer_sgn">
-              <button
-                className="submit_sgn" 
-                onClick={() => { setAction("SIGN UP") }}>
+              <button className="submit_sgn" onClick={handleSignUp}>
                 Sign Up
               </button>
+              <button
+                className="forgotPw-btn"
+                onClick={() => {
+                  setAction("LOG IN");
+                  setPageTitle("Log In");
+                }}
+              >
+                Already have an account?
+              </button>
             </div>
-          }
+          )}
 
           {/* FORGOT PASSWORD */}
           {action === "SIGN UP" ? null :
             <div className="forgotPw">
               <button type="button" className="forgotPw-btn">Forgot Password?</button>
             </div>
-          }
-
-          {/* ALREADY HAVE ACCOUNT */}
-          {action === "LOG IN" ? null :
-            <div className="forgotPw">
-              <button 
-                type="button" 
-                className="forgotPw-btn" 
-                onClick={() => { setAction("LOG IN"); setPageTitle("Log In"); }}>
-                Already have an account?
-              </button>
-            </div>
-          }
-          
+          }       
         </div>
       </div>
+      
     </>
   );
 };
