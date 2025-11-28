@@ -18,16 +18,34 @@ export const LoginSignup = () => {
 
   const navigate = useNavigate();
 
-  const handleLogIn = (e) => {
-    e.preventDefault(); 
+  const handleLogIn = async (e) => {
+  e.preventDefault();
 
-  if (username === "admin" && pw === "admin") {
-    localStorage.setItem("loggedIn", "true");
-    navigate("/dashboard");
-  } else {
-      alert("The password or username you've entered is incorrect.");
+  try {
+    const res = await fetch("http://localhost:8080/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: username,
+        password: pw
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem("loggedIn", "true");
+      navigate("/dashboard");
+    } else {
+      alert(data.message);
+    }
+
+  } catch (err) {
+    console.error("Login failed:", err);
+    alert("Server error. Please try again.");
     }
   };
+
 
   return (
     <>
