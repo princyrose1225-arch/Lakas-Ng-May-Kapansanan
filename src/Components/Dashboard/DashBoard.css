@@ -1,36 +1,79 @@
+/* Reset */
 html, body {
-  margin-top: auto;
+  margin: 0;
   padding: 0;
-  overflow: hidden; /* prevents any scrolling */
   height: 100%;
   width: 100%;
+  overflow: hidden; /* prevent scrolling */
+  font-family: Arial, sans-serif;
 }
+
+/* Title */
 .map-title {
   width: 100%;
   text-align: center;
-  padding: 15px 0;  /* smaller so height is predictable */
+  padding: 15px 0;
   color: white;
-  font-family: Arial, sans-serif;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: bold;
   box-sizing: border-box;
 }
 
-/* Title height = 60px (approx) */
+/* Dashboard layout */
 .dashboard-container {
+  display: flex;
+  flex-direction: column; /* stack map and info */
   height: calc(100vh - 60px);
   width: 100vw;
-  overflow: hidden; /* prevents map overflow */
 }
 
-/* Map must not overflow container */
+/* Map */
 .map-container {
-  height: 50vh;
-  width: 100vw;
-  overflow: hidden;
+  flex: 1; /* take remaining space */
+  width: 100%;
 }
 
-/* Fix Leaflet control overflow */
+/* Info box below map for mobile */
+.map-info-box {
+  background-color: #333;
+  color: #fff;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+/* Alert button */
+.alert-btn {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* Leaflet controls fix */
 .leaflet-control-container {
   box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media(min-width: 768px) {
+  .dashboard-container {
+    flex-direction: row; /* side by side on desktop */
+  }
+
+  .map-container {
+    flex: 2; /* map bigger */
+    height: auto;
+  }
+
+  .map-info-box {
+    flex: 1; /* smaller info panel */
+    max-width: 400px;
+    margin-left: 10px;
+  }
 }
