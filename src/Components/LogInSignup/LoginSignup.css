@@ -17,16 +17,18 @@ h2{
     width: 300px;
 }
 
-.bg_logo{
+.bg_logo {
     margin-bottom: 10px;
     display: flex;
-    justify-content: center;     /* horizontal center */
-    align-items: center;        /* vertical center */
+    justify-content: center; /* horizontal center */
+    align-items: center;     /* vertical center */
 }
 
-.bg_logo img{
-    width: 15vw;
-    height: 25vh;
+.bg_logo img {
+    max-width: 100%;  /* image will never be wider than its container */
+    height: auto;     /* maintains aspect ratio */
+    width: auto;      /* optional if you want height-based scaling */
+    max-height: 25vh; /* optional to limit vertical space */
 }
 
 input[type="text"], input[type="password"], input[type="email"] {

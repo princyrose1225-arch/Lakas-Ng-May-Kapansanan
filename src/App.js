@@ -8,7 +8,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LoginSignup />} />
+        <Route path="/" element={<DashBoard />} />
         <Route path="/login" element={<LoginSignup />} />
 
         <Route
