@@ -7,7 +7,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import "./DashBoard.css";
 
-// Fix Leaflet default icon paths
+// Fix default marker
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -16,111 +16,53 @@ L.Icon.Default.mergeOptions({
 });
 
 function DashBoard() {
-  const [position, setPosition] = useState(null); // [lat, lng]
-  const [initialCenter] = useState([14.7699169, 121.0784688]);
+  const [position, setPosition] = useState(null);
   const mapRef = useRef(null);
-  const watchIdRef = useRef(null);
 
-  // Helper: set view on map when we have both map + position
-  useEffect(() => {
-    if (!mapRef.current || !position) return;
-    try {
-      // ensure map layout is correct then set view
-      mapRef.current.invalidateSize();
-      mapRef.current.setView(position, 17, { animate: true });
-    } catch (err) {
-      console.error("Error setting map view:", err);
-    }
-  }, [position]);
-
+  // ⬇️ Run only once
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      alert("Geolocation is not supported by your browser");
+      alert("Your browser does not support geolocation.");
       return;
     }
 
-    const handleSuccess = (pos) => {
+    const onSuccess = (pos) => {
       const coords = [pos.coords.latitude, pos.coords.longitude];
       setPosition(coords);
-    };
 
-    const handleError = (err) => {
-      console.warn("Geolocation error:", err);
-      if (err.code === 1) {
-        // Permission denied
-        alert("Please allow location access for this feature to work.");
+      // ⬇️ Force map recenter when location updates
+      if (mapRef.current) {
+        mapRef.current.setView(coords, 17, { animate: true });
       }
     };
 
-    // 1) Try getCurrentPosition immediately (useful right after user clicks Allow)
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+    const onError = (err) => {
+      console.warn("Geo Error:", err);
+    };
+
+    // Get location once
+    navigator.geolocation.getCurrentPosition(onSuccess, onError);
+
+    // Then watch location continuously
+    const watchId = navigator.geolocation.watchPosition(onSuccess, onError, {
       enableHighAccuracy: true,
-      timeout: 7000,
     });
 
-    // 2) Start watchPosition for continuous updates
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      handleSuccess,
-      handleError,
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 7000,
-      }
-    );
-
-    // 3) If Permissions API exists, listen for changes (user may toggle permission)
-    let permissionAbort = null;
-    if (navigator.permissions && navigator.permissions.query) {
-      let mounted = true;
-      navigator.permissions.query({ name: "geolocation" }).then((status) => {
-        if (!mounted) return;
-        // if state becomes 'granted', request a fresh position
-        const onChange = () => {
-          if (status.state === "granted") {
-            // force a fresh read
-            navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
-              enableHighAccuracy: true,
-              timeout: 7000,
-            });
-          }
-        };
-        status.addEventListener?.("change", onChange);
-        // cleanup closure
-        permissionAbort = () => status.removeEventListener?.("change", onChange);
-      }).catch(() => {
-        permissionAbort = null;
-      });
-
-      return () => {
-        mounted = false;
-        if (permissionAbort) permissionAbort();
-        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-      };
-    }
-
-    // cleanup if Permissions API not used
-    return () => {
-      if (permissionAbort) permissionAbort();
-      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-    };
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   return (
     <>
-      <div className="map-title">
-        <h1>Map User Location</h1>
-      </div>
+      <div className="map-title"><h1>Map User Location</h1></div>
 
       <div className="dashboard-container">
         <MapContainer
-          center={initialCenter}
-          zoom={16}
+          center={[14.7699169, 121.0784688]}
+          zoom={15}
           className="map-container"
-          whenCreated={(mapInstance) => {
-            mapRef.current = mapInstance;
-            // Invalidate size to prevent tile cut-off when map is inside flex/hidden containers
-            setTimeout(() => mapInstance.invalidateSize(), 300);
+          whenCreated={(map) => {
+            mapRef.current = map;
+            setTimeout(() => map.invalidateSize(), 200);
           }}
         >
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -128,7 +70,7 @@ function DashBoard() {
           {position && (
             <>
               <Marker position={position} />
-              <Circle center={position} radius={450} />
+              <Circle center={position} radius={400} />
             </>
           )}
         </MapContainer>
