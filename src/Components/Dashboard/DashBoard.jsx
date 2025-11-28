@@ -33,28 +33,42 @@ function DashBoard() {
       return;
     }
 
-    // Getting location
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        setPosition([pos.coords.latitude, pos.coords.longitude]); 
-      },
-      (err) => {
-        console.error("Geolocation error:", err);
-        alert(
-          err.code === 1
-            ? "Please allow location access"
-            : "Unable to get your location"
-        );
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000,
-      }
-    );
+   // 🔹 Get current position immediately after user allows location
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      setPosition([pos.coords.latitude, pos.coords.longitude]);
+    },
+    (err) => {
+      console.error("Geolocation error:", err);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 5000
+    }
+  );
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  // 🔹 Then watch for continuous location updates
+  const watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      setPosition([pos.coords.latitude, pos.coords.longitude]);
+    },
+    (err) => {
+      console.error("Geolocation error:", err);
+      alert(
+        err.code === 1
+          ? "Please allow location access"
+          : "Unable to get your location"
+      );
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000,
+    }
+  );
+
+  return () => navigator.geolocation.clearWatch(watchId);
+}, []);
 
   return (
     // Main container for the dashboard
